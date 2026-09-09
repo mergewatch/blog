@@ -1,0 +1,25 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - corepack enable
+        - corepack prepare pnpm@10.23.0 --activate
+        - pnpm install --frozen-lockfile
+        - pnpm run format:check
+        - pnpm run lint
+        - pnpm run typecheck
+        - pnpm run test
+    build:
+      commands:
+        - pnpm run validate:content
+        - pnpm run build
+  artifacts:
+    baseDirectory: .next
+    files:
+      - "**/*"
+  cache:
+    paths:
+      - node_modules/**/*
+      - .next/cache/**/*
+      - ~/.pnpm-store/**/*
