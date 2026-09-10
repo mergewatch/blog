@@ -67,12 +67,23 @@ if (pages.length < 5)
   bad(`only ${pages.length} rendered page(s) — build looks empty`);
 else ok(`${pages.length} rendered pages`);
 
-const published = pages.filter(
-  (f) => path.basename(f) === "introducing-mergewatch.html",
+// Derived, not hardcoded. A fixed sentinel slug stops being meaningful the
+// moment that article is renamed, and the canonical checks below depend on
+// finding a real published page.
+const publishedSlugs = getAllContent({ includeDrafts: false })
+  .filter((item) => item.type === "posts")
+  .map((item) => item.slug);
+const published = pages.filter((f) =>
+  publishedSlugs.some((slug) => path.basename(f) === `${slug}.html`),
 );
-if (!published.length)
-  bad("published article introducing-mergewatch.html was not emitted");
-else ok("published articles present");
+if (!publishedSlugs.length)
+  bad("no published posts in content/ — nothing to verify against");
+else if (!published.length)
+  bad(
+    "no published post was emitted",
+    `expected one of: ${publishedSlugs.join(", ")}`,
+  );
+else ok(`${published.length} published post(s) emitted`);
 
 // ── drafts must never ship, whatever the preview flag says ──────────────────
 // Slugs come from the app's own parser (gray-matter + zod), not a hand-rolled
@@ -114,6 +125,12 @@ if (!drafts.length) {
   else ok("no draft links in any rendered HTML");
 }
 
+// Match the canonical TAG, not merely the URL appearing somewhere. A page that
+// links to another blog post contains that origin too, so a substring test
+// would pass on a page carrying no canonical at all.
+const CANONICAL =
+  /<link[^>]+rel=["']canonical["'][^>]+href=["']https:\/\/mergewatch\.ai\/blog/i;
+
 // ── environment-specific expectations ───────────────────────────────────────
 // Only ever assert against a KNOWN published article. Falling back to pages[0]
 // could land on _not-found.html and either produce a confusing second failure
@@ -124,8 +141,11 @@ const html = sample ? readOrFail(sample, "reading the sample article") : null;
 if (!html) {
   bad("no published article to check canonical/noindex against");
 } else if (mode === "production") {
-  if (!html.includes('href="https://mergewatch.ai/blog'))
-    bad("canonical does not point at https://mergewatch.ai/blog", sample!);
+  if (!CANONICAL.test(html))
+    bad(
+      "no <link rel=canonical> pointing at https://mergewatch.ai/blog",
+      sample!,
+    );
   else ok("canonical points at the production origin");
 
   if (/noindex/i.test(html)) bad("production page carries noindex", sample!);
@@ -135,7 +155,7 @@ if (!html) {
   else ok("staging output carries noindex");
 
   // Canonicals stay production-absolute even on staging — that is the design.
-  if (!html.includes('href="https://mergewatch.ai/blog'))
+  if (!CANONICAL.test(html))
     bad("staging canonical does not point at the production origin", sample!);
   else ok("staging canonical still points at production");
 }
