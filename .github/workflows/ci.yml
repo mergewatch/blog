@@ -42,7 +42,7 @@ jobs:
           NEXT_PUBLIC_SHOW_DRAFTS: "true"
         run: |
           pnpm build
-          node scripts/verify-build-output.mjs production
+          node --import tsx scripts/verify-build-output.ts production
       - name: Build staging and verify noindex settings
         env:
           DEPLOYMENT_ENV: development
@@ -51,4 +51,4 @@ jobs:
           NEXT_PUBLIC_SHOW_DRAFTS: "false"
         run: |
           pnpm build
-          node scripts/verify-build-output.mjs staging
+          node --import tsx scripts/verify-build-output.ts staging

@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Assert on what the build actually EMITTED (#9).
  *
@@ -8,19 +7,20 @@
  * anyway — but nothing inspected the output, so if the guard broke both steps
  * would still pass while their names kept claiming otherwise.
  *
- * Usage: node scripts/verify-build-output.mjs production|staging
+ * Usage: node --import tsx scripts/verify-build-output.ts production|staging
  */
-import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import fs from "node:fs";
+import path from "node:path";
+import { getAllContent } from "../lib/content";
 
 const mode = process.argv[2];
 if (mode !== "production" && mode !== "staging") {
-  console.error("usage: verify-build-output.mjs production|staging");
+  console.error("usage: verify-build-output.ts production|staging");
   process.exit(2);
 }
 
-const appDir = join(process.cwd(), ".next", "server", "app");
-if (!existsSync(appDir)) {
+const appDir = path.join(process.cwd(), ".next", "server", "app");
+if (!fs.existsSync(appDir)) {
   console.error(
     `✗ CANNOT VERIFY — ${appDir} does not exist. Did the build run?`,
   );
@@ -28,37 +28,20 @@ if (!existsSync(appDir)) {
   process.exit(2);
 }
 
+const failures: string[] = [];
+const checks: string[] = [];
+const ok = (label: string) => checks.push(`✓ ${label}`);
+const bad = (label: string, detail?: string) =>
+  failures.push(`${label}${detail ? ` — ${detail}` : ""}`);
+
 /** Read a file, or record why we could not and keep the structured output. */
-function readOrFail(file, label) {
+function readOrFail(file: string, label: string): string | null {
   try {
-    return readFileSync(file, "utf8");
+    return fs.readFileSync(file, "utf8");
   } catch (error) {
-    bad(label, `could not read ${file}: ${error.message}`);
+    bad(label, `could not read ${file}: ${(error as Error).message}`);
     return null;
   }
-}
-
-/**
- * Draft slugs are DERIVED from content/, not hardcoded. A hardcoded slug stops
- * testing anything the moment the fixture is renamed — and does so silently,
- * which is the failure mode this whole script exists to remove.
- */
-function draftSlugs() {
-  const root = join(process.cwd(), "content");
-  const slugs = [];
-  if (!existsSync(root)) return slugs;
-  for (const type of readdirSync(root)) {
-    const dir = join(root, type);
-    if (!statSync(dir).isDirectory()) continue;
-    for (const name of readdirSync(dir)) {
-      if (!/\.mdx?$/.test(name)) continue;
-      const body = readFileSync(join(dir, name), "utf8");
-      const front = body.split("---")[1] ?? "";
-      if (/^draft:\s*true\s*$/m.test(front))
-        slugs.push(name.replace(/\.mdx?$/, ""));
-    }
-  }
-  return slugs;
 }
 
 /**
@@ -67,22 +50,16 @@ function draftSlugs() {
  * slugs legitimately. Grepping them would fail this check for a reason that
  * has nothing to do with what shipped.
  */
-function htmlFiles(dir, out = []) {
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) htmlFiles(full, out);
+function htmlFiles(dir: string, out: string[] = []): string[] {
+  for (const entry of fs.readdirSync(dir)) {
+    const full = path.join(dir, entry);
+    if (fs.statSync(full).isDirectory()) htmlFiles(full, out);
     else if (entry.endsWith(".html")) out.push(full);
   }
   return out;
 }
 
 const pages = htmlFiles(appDir);
-const failures = [];
-const checks = [];
-const ok = (label) => checks.push(`✓ ${label}`);
-const bad = (label, detail) => {
-  failures.push(`${label}${detail ? ` — ${detail}` : ""}`);
-};
 
 // ── the build produced something ────────────────────────────────────────────
 // An assertion that only proves ABSENCE passes when everything is absent.
@@ -90,35 +67,51 @@ if (pages.length < 5)
   bad(`only ${pages.length} rendered page(s) — build looks empty`);
 else ok(`${pages.length} rendered pages`);
 
-const published = pages.filter((f) => /introducing-mergewatch\.html$/.test(f));
+const published = pages.filter(
+  (f) => path.basename(f) === "introducing-mergewatch.html",
+);
 if (!published.length)
   bad("published article introducing-mergewatch.html was not emitted");
 else ok("published articles present");
 
 // ── drafts must never ship, whatever the preview flag says ──────────────────
-const drafts = draftSlugs();
+// Slugs come from the app's own parser (gray-matter + zod), not a hand-rolled
+// split. `---` is a markdown horizontal rule, so splitting a file on it
+// misparses any post containing one — and a missed `draft: true` means that
+// draft is never checked at all.
+const drafts = getAllContent({ includeDrafts: true })
+  .filter((item) => item.draft)
+  .map((item) => item.slug);
+
 if (!drafts.length) {
   // content/ ships a deliberate draft as a publication-safety fixture. With
   // none present these checks would pass vacuously and prove nothing.
   bad("no draft content found — the publication-safety fixture is missing");
 } else {
   ok(
-    `${drafts.length} draft slug(s) derived from content: ${drafts.join(", ")}`,
+    `${drafts.length} draft slug(s) from the content parser: ${drafts.join(", ")}`,
   );
 
+  // Exact filename, not substring: a draft slug that is a prefix of a
+  // published one would otherwise condemn the published page.
   const draftPages = pages.filter((f) =>
-    drafts.some((slug) => f.includes(slug)),
+    drafts.some((slug) => path.basename(f) === `${slug}.html`),
   );
   if (draftPages.length) bad("draft page emitted", draftPages.join(", "));
   else ok("no draft page emitted");
 
+  // In HTML, match the slug as a complete URL path segment. A bare substring
+  // search matches prose and unrelated slugs, and a false positive here is as
+  // corrosive as a miss: it makes the check something people route around.
+  const hrefFor = (slug: string) =>
+    new RegExp(`/${slug.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=["'/?#])`);
   const leaked = pages.filter((f) => {
-    const body = readOrFail(f, "scanning rendered HTML for draft slugs");
-    return body !== null && drafts.some((slug) => body.includes(slug));
+    const body = readOrFail(f, "scanning rendered HTML for draft links");
+    return body !== null && drafts.some((slug) => hrefFor(slug).test(body));
   });
   if (leaked.length)
-    bad("draft slug appears in rendered HTML", leaked.slice(0, 3).join(", "));
-  else ok("draft slugs absent from all rendered HTML");
+    bad("draft link appears in rendered HTML", leaked.slice(0, 3).join(", "));
+  else ok("no draft links in any rendered HTML");
 }
 
 // ── environment-specific expectations ───────────────────────────────────────
@@ -132,18 +125,18 @@ if (!html) {
   bad("no published article to check canonical/noindex against");
 } else if (mode === "production") {
   if (!html.includes('href="https://mergewatch.ai/blog'))
-    bad("canonical does not point at https://mergewatch.ai/blog", sample);
+    bad("canonical does not point at https://mergewatch.ai/blog", sample!);
   else ok("canonical points at the production origin");
 
-  if (/noindex/i.test(html)) bad("production page carries noindex", sample);
+  if (/noindex/i.test(html)) bad("production page carries noindex", sample!);
   else ok("no noindex on production output");
 } else {
-  if (!/noindex/i.test(html)) bad("staging page is missing noindex", sample);
+  if (!/noindex/i.test(html)) bad("staging page is missing noindex", sample!);
   else ok("staging output carries noindex");
 
   // Canonicals stay production-absolute even on staging — that is the design.
   if (!html.includes('href="https://mergewatch.ai/blog'))
-    bad("staging canonical does not point at the production origin", sample);
+    bad("staging canonical does not point at the production origin", sample!);
   else ok("staging canonical still points at production");
 }
 
