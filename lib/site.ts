@@ -9,12 +9,6 @@ export function normalizeBasePath(
 
 export const basePath = normalizeBasePath();
 export const isProduction = process.env.DEPLOYMENT_ENV === "production";
-export const runtimeOrigin = isProduction
-  ? PRODUCTION_ORIGIN
-  : (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(
-      /\/$/,
-      "",
-    );
 export const canonicalRoot = `${PRODUCTION_ORIGIN}${basePath}`;
 
 export function canonicalUrl(path = "") {

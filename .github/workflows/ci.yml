@@ -37,7 +37,6 @@ jobs:
       - name: Build production and verify canonical/index settings
         env:
           DEPLOYMENT_ENV: production
-          NEXT_PUBLIC_SITE_URL: https://mergewatch.ai
           NEXT_PUBLIC_BASE_PATH: /blog
           NEXT_PUBLIC_SHOW_DRAFTS: "true"
         run: |
@@ -46,7 +45,6 @@ jobs:
       - name: Build staging and verify noindex settings
         env:
           DEPLOYMENT_ENV: development
-          NEXT_PUBLIC_SITE_URL: https://development.mergewatch.ai
           NEXT_PUBLIC_BASE_PATH: /blog
           NEXT_PUBLIC_SHOW_DRAFTS: "false"
         run: |
