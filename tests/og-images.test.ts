@@ -27,11 +27,17 @@ describe("OG images are prerendered", () => {
   });
 
   it("does not generate an image for drafts", () => {
-    const slugs = generateStaticParams().map((p) => p.slug);
+    // Compare (type, slug) pairs, which is what identifies an OG image — the
+    // route is /og/[type]/[slug]. Matching on slug alone would FAIL whenever a
+    // draft shared a slug with a published item of a DIFFERENT type: the slug
+    // would be present, supplied by the published item, and the assertion
+    // would read that as the draft having leaked.
+    const pairs = generateStaticParams().map((p) => `${p.type}/${p.slug}`);
     const drafts = getAllContent({ includeDrafts: true }).filter(
       (i) => i.draft,
     );
     expect(drafts.length, "the draft fixture is missing").toBeGreaterThan(0);
-    for (const draft of drafts) expect(slugs).not.toContain(draft.slug);
+    for (const draft of drafts)
+      expect(pairs).not.toContain(`${draft.type}/${draft.slug}`);
   });
 });
