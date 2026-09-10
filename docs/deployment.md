@@ -33,6 +33,41 @@ Manual infrastructure work is required:
 
 If the existing edge cannot route by path, deploy the app temporarily on a MergeWatch-controlled subdomain and keep `/blog` support enabled for a later reverse proxy. Do not silently publish a different canonical architecture, and never point customer/self-hosted domains at this content.
 
+## robots.txt lives in three places, and only one of them is this app
+
+`app/robots.ts` is served at `/blog/robots.txt` because the app is mounted at
+`basePath=/blog`. **Crawlers only read a host root**, so that file governs
+nothing on its own. Three hosts, three answers:
+
+| URL a crawler fetches                       | Served by                        | Says                                  |
+| ------------------------------------------- | -------------------------------- | ------------------------------------- |
+| `mergewatch.ai/robots.txt`                  | the **dashboard** app            | allow, and must list the blog sitemap |
+| `blog.mergewatch.ai/robots.txt`             | this app, via an Amplify rewrite | `Disallow: /`                         |
+| `development-blog.mergewatch.ai/robots.txt` | same                             | `Disallow: /`                         |
+
+The origin hostnames exist so the `/blog` proxy has something to fetch. They
+serve the same pages as the canonical URLs, so leaving them crawlable would
+publish a second copy of the whole blog.
+
+**The mechanism:** `public/origin-robots.txt` is served under the base path at
+`/blog/origin-robots.txt`, and an Amplify custom rule on the blog app rewrites
+the host root onto it:
+
+```
+/robots.txt  ->  /blog/origin-robots.txt  [200]
+```
+
+**Do not fix this by making `app/robots.ts` emit `Disallow: /`.** That file is
+also served through the proxy at `mergewatch.ai/blog/robots.txt`, and it is the
+one that must eventually say _allow_ for the canonical host. Nor by removing
+`basePath` — that changes every canonical and asset path, and
+`tests/environment.test.ts` asserts the current behaviour.
+
+**Do not add `X-Robots-Tag: noindex` to the origin hosts.** The proxy fetches
+from those same hosts, so unless a proxied request can be told apart from a
+direct one — and Amplify rewrites give no dependable header to key on — that
+header would deindex the canonical URL too. Failing silently, weeks later.
+
 ## Promotion
 
 Amplify deploys `development` automatically for editorial review. Promote an approved commit through a pull request to `main`; that branch is the only deployment configured as production and indexable. GitHub Actions does not deploy, preventing two CD systems from racing.
