@@ -8,14 +8,15 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "pnpm validate:content && next build",
+    "build": "pnpm check:build-env && pnpm validate:content && next build",
     "start": "next start",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "validate:content": "node --import tsx scripts/validate-content.ts"
+    "validate:content": "node --import tsx scripts/validate-content.ts",
+    "check:build-env": "node --import tsx scripts/check-build-env.ts"
   },
   "dependencies": {
     "@next/third-parties": "^15.5.9",
