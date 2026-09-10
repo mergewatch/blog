@@ -7,11 +7,14 @@
 3. Amplify reads the root `amplify.yml`, installs pinned pnpm 10.23.0, runs all checks, and publishes Next.js server output from `.next`.
 4. Configure environment variables per branch:
 
-| Branch        | `NEXT_PUBLIC_SITE_URL`              | `NEXT_PUBLIC_BASE_PATH` | `DEPLOYMENT_ENV` |
-| ------------- | ----------------------------------- | ----------------------- | ---------------- |
-| `development` | `https://development.mergewatch.ai` | `/blog`                 | `development`    |
-| `main`        | `https://mergewatch.ai`             | `/blog`                 | `production`     |
-| previews      | preview origin                      | `/blog`                 | `preview`        |
+| Branch        | `NEXT_PUBLIC_BASE_PATH` | `DEPLOYMENT_ENV` |
+| ------------- | ----------------------- | ---------------- |
+| `development` | `/blog`                 | `development`    |
+| `main`        | `/blog`                 | `production`     |
+| previews      | `/blog`                 | `preview`        |
+
+`main` will refuse to build without `DEPLOYMENT_ENV=production` — the site would
+otherwise deploy successfully and be invisible to search.
 
 Leave `NEXT_PUBLIC_SHOW_DRAFTS=false` in hosted environments. Add `NEXT_PUBLIC_GA_MEASUREMENT_ID` only on production if analytics is wanted.
 
