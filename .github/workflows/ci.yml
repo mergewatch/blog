@@ -31,17 +31,24 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm validate:content
+      # NEXT_PUBLIC_SHOW_DRAFTS is deliberately "true" here. The point is to
+      # prove DEPLOYMENT_ENV=production excludes drafts even when the preview
+      # flag is on — the hostile case, not the happy one.
       - name: Build production and verify canonical/index settings
         env:
           DEPLOYMENT_ENV: production
           NEXT_PUBLIC_SITE_URL: https://mergewatch.ai
           NEXT_PUBLIC_BASE_PATH: /blog
           NEXT_PUBLIC_SHOW_DRAFTS: "true"
-        run: pnpm build
+        run: |
+          pnpm build
+          node --import tsx scripts/verify-build-output.ts production
       - name: Build staging and verify noindex settings
         env:
           DEPLOYMENT_ENV: development
           NEXT_PUBLIC_SITE_URL: https://development.mergewatch.ai
           NEXT_PUBLIC_BASE_PATH: /blog
           NEXT_PUBLIC_SHOW_DRAFTS: "false"
-        run: pnpm build
+        run: |
+          pnpm build
+          node --import tsx scripts/verify-build-output.ts staging
