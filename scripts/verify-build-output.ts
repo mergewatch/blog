@@ -63,6 +63,24 @@ function htmlFiles(dir: string, out: string[] = []): string[] {
   return out;
 }
 
+type PrerenderRoute = { initialRevalidateSeconds?: number | false };
+
+/** Parse the prerender manifest, or null with the reason recorded. */
+function readManifest(
+  file: string,
+): { routes?: Record<string, PrerenderRoute> } | null {
+  if (!fs.existsSync(file)) {
+    bad("prerender manifest missing", `${file} — did the build run?`);
+    return null;
+  }
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch (error) {
+    bad("prerender manifest unparseable", (error as Error).message);
+    return null;
+  }
+}
+
 const pages = htmlFiles(appDir);
 
 // ── the build produced something ────────────────────────────────────────────
@@ -237,10 +255,16 @@ const manifestPath = path.join(
   ".next",
   "prerender-manifest.json",
 );
-try {
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-  const routes: Record<string, { initialRevalidateSeconds?: number | false }> =
-    manifest.routes ?? {};
+// Fail BOTH assertions by name when the manifest cannot be read. A single
+// "could not read" line reads like one small problem, when in fact neither the
+// document check nor the image check ran — the same trap as reporting a skipped
+// gate as a pass.
+const manifest = readManifest(manifestPath);
+if (!manifest) {
+  bad("document revalidate NOT CHECKED — prerender manifest unreadable");
+  bad("image immutability NOT CHECKED — prerender manifest unreadable");
+} else {
+  const routes: Record<string, PrerenderRoute> = manifest.routes ?? {};
   const isImage = (route: string) =>
     route === "/opengraph-image" || route.startsWith("/og/");
   // Documents are the extensionless HTML routes. robots.txt, sitemap.xml and
@@ -281,8 +305,6 @@ try {
       revalidatingImages.map(([r]) => r).join(", "),
     );
   else ok(`${imgs.length} image route(s) keep the immutable cache`);
-} catch (error) {
-  bad("could not read the prerender manifest", (error as Error).message);
 }
 
 for (const line of checks) console.log(`  ${line}`);
