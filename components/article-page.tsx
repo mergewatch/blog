@@ -6,6 +6,7 @@ import {
   authorSlug,
   contentHref,
   getAdjacentPost,
+  getAuthors,
   getRelated,
   type ContentItem,
 } from "@/lib/content";
@@ -23,6 +24,7 @@ export function ArticlePage({ item }: { item: ContentItem }) {
   const related = getRelated(item);
   const adjacent = getAdjacentPost(item);
   const url = item.canonical ?? canonicalUrl(contentHref(item));
+  const author = getAuthors().find(({ name }) => name === item.author);
   const crumbs = [
     { name: "Blog", url: canonicalUrl() },
     { name: item.title, url },
@@ -37,7 +39,7 @@ export function ArticlePage({ item }: { item: ContentItem }) {
       dateModified: item.updated ?? item.date,
       mainEntityOfPage: url,
       author: {
-        "@type": "Organization",
+        "@type": author?.kind === "organization" ? "Organization" : "Person",
         name: item.author,
         url: canonicalUrl(`/authors/${authorSlug(item.author)}`),
       },
