@@ -1,0 +1,14 @@
+# Served at the HOST ROOT of the origin hostnames (blog.mergewatch.ai and
+# development-blog.mergewatch.ai) by an Amplify rewrite, because the app is
+# mounted at /blog and Next therefore serves its own robots at /blog/robots.txt
+# — a path no crawler fetches.
+#
+# The canonical home of this content is https://mergewatch.ai/blog. The origin
+# hostnames serve the same pages so the /blog proxy has somewhere to fetch
+# from; they are not a second site and must not be indexed as one.
+#
+# Requests arriving via the proxy never reach this file: they are for
+# mergewatch.ai/blog/..., and mergewatch.ai/robots.txt is served by the
+# dashboard app, not by this one.
+User-agent: *
+Disallow: /

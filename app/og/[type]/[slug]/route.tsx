@@ -1,7 +1,35 @@
 import { ImageResponse } from "next/og";
-import { getContent, type ContentType } from "@/lib/content";
+import {
+  contentTypes,
+  getAllContent,
+  getContent,
+  type ContentType,
+} from "@/lib/content";
 
 export const runtime = "nodejs";
+
+/**
+ * Prerender every OG image at build time (#13).
+ *
+ * As a dynamic route this returned 500 on Amplify — `ImageResponse` streams,
+ * and Amplify's SSR adapter fails to pipe a streamed response ("failed to pipe
+ * response"). It failed at the origin as well as through the /blog proxy, so
+ * it was never a proxy problem.
+ *
+ * Nothing here needs a request: the content set is known at build time, there
+ * are no external fonts and no network calls. Rendering these at build time
+ * removes the streaming path entirely rather than working around it, and every
+ * other page on this site is already prerendered.
+ */
+export const dynamic = "force-static";
+export const dynamicParams = false;
+
+export function generateStaticParams() {
+  return getAllContent()
+    .filter((item) => contentTypes.includes(item.type))
+    .map((item) => ({ type: item.type, slug: item.slug }));
+}
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ type: string; slug: string }> },
@@ -63,8 +91,22 @@ export async function GET(
         >
           {item.title}
         </div>
-        <div style={{ marginTop: 28, color: "#989898", fontSize: 24 }}>
-          {item.author} · {item.readingTime}
+        {/* Satori requires an explicit display on any element with more than
+            one child. This has three — author, the separator, reading time —
+            and without it ImageResponse throws, which is why this route
+            returned 500 on every host. */}
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            marginTop: 28,
+            color: "#989898",
+            fontSize: 24,
+          }}
+        >
+          <span>{item.author}</span>
+          <span>·</span>
+          <span>{item.readingTime}</span>
         </div>
       </div>
     </div>,

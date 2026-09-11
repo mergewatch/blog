@@ -2,7 +2,7 @@
 
 Production is the only indexable environment. The exact switch is `DEPLOYMENT_ENV=production`; unset, misspelled, development, preview, and branch environments all emit page-level `noindex, nofollow` and a blocking robots.txt.
 
-All canonical URLs are constructed from `https://mergewatch.ai` plus the configured base path. `NEXT_PUBLIC_SITE_URL` describes the runtime origin but is never used as the canonical origin. Content canonical overrides are validated to remain under `https://mergewatch.ai/blog/`.
+All canonical URLs are constructed from `https://mergewatch.ai` plus the configured base path. Content canonical overrides are validated to remain under `https://mergewatch.ai/blog/`.
 
 Production generates:
 
