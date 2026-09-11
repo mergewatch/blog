@@ -29,6 +29,9 @@ if (!fs.existsSync(appDir)) {
   process.exit(2);
 }
 
+/** Keep in step with `export const revalidate` in app/layout.tsx (#21). */
+const REVALIDATE_SECONDS = 300;
+
 const failures: string[] = [];
 const checks: string[] = [];
 const ok = (label: string) => checks.push(`✓ ${label}`);
@@ -220,6 +223,67 @@ for (const page of pages) {
 }
 if (resolved)
   ok(`${resolved} advertised social image(s) resolve to emitted PNGs`);
+
+// ── documents revalidate; images keep the immutable year (#21) ──────────────
+// The root layout sets revalidate=300 so a published or DELETED post stops
+// sitting behind a year-old cached copy. Route segment config inherits, so the
+// image routes pin revalidate=false explicitly — without that they would only
+// HAPPEN not to inherit, which is not the same as being intended to.
+//
+// Asserted against the built manifest rather than the source, because what
+// ships is what the manifest says.
+const manifestPath = path.join(
+  process.cwd(),
+  ".next",
+  "prerender-manifest.json",
+);
+try {
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  const routes: Record<string, { initialRevalidateSeconds?: number | false }> =
+    manifest.routes ?? {};
+  const isImage = (route: string) =>
+    route === "/opengraph-image" || route.startsWith("/og/");
+  // Documents are the extensionless HTML routes. robots.txt, sitemap.xml and
+  // icon.svg are route handlers, and they already serve
+  // `max-age=0, must-revalidate` — the year-long cache is attached specifically
+  // to prerendered PAGE output, which is what #21 is about.
+  const isAsset = (route: string) => /\.[a-z0-9]+$/i.test(route);
+
+  const docs = Object.entries(routes).filter(
+    ([r]) => !isImage(r) && !isAsset(r),
+  );
+  const imgs = Object.entries(routes).filter(([r]) => isImage(r));
+
+  const staleDocs = docs.filter(
+    ([, v]) => v.initialRevalidateSeconds !== REVALIDATE_SECONDS,
+  );
+  if (!docs.length) bad("no document routes in the prerender manifest");
+  else if (staleDocs.length)
+    bad(
+      `${staleDocs.length} document route(s) not set to revalidate every ${REVALIDATE_SECONDS}s`,
+      staleDocs
+        .map(([r]) => r)
+        .slice(0, 3)
+        .join(", "),
+    );
+  else
+    ok(
+      `${docs.length} document route(s) revalidate every ${REVALIDATE_SECONDS}s`,
+    );
+
+  const revalidatingImages = imgs.filter(
+    ([, v]) => v.initialRevalidateSeconds !== false,
+  );
+  if (!imgs.length) bad("no image routes in the prerender manifest");
+  else if (revalidatingImages.length)
+    bad(
+      "image route inherited a revalidate value instead of staying immutable",
+      revalidatingImages.map(([r]) => r).join(", "),
+    );
+  else ok(`${imgs.length} image route(s) keep the immutable cache`);
+} catch (error) {
+  bad("could not read the prerender manifest", (error as Error).message);
+}
 
 for (const line of checks) console.log(`  ${line}`);
 if (failures.length) {

@@ -3,6 +3,9 @@ import { ImageResponse } from "next/og";
 export const alt = "MergeWatch Blog — Building trust into every pull request";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+// See app/og/[type]/[slug]/route.tsx — pinned so the root layout's
+// revalidate=300 (#21) cannot reach this image.
+export const revalidate = false;
 export default function OpenGraphImage() {
   return new ImageResponse(
     <div
