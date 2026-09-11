@@ -45,14 +45,6 @@
   }
 }
 
-.technical-grid {
-  background-image:
-    linear-gradient(var(--border-subtle) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
-  background-size: 32px 32px;
-  mask-image: linear-gradient(to bottom, black, transparent 85%);
-}
-
 .heading-anchor {
   color: inherit !important;
   text-decoration: none !important;

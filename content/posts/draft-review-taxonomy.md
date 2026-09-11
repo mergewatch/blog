@@ -5,7 +5,6 @@ date: "2026-09-09"
 author: "MergeWatch Team"
 category: "Engineering"
 tags: [code-review, evaluation]
-featured: false
 draft: true
 ---
 

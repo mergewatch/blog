@@ -2,14 +2,12 @@
 
 ## Collections and URLs
 
-| Directory                    | Public URL with `/blog` base path |
-| ---------------------------- | --------------------------------- |
-| `content/posts/my-post.md`   | `/blog/my-post`                   |
-| `content/changelog/v1.md`    | `/blog/changelog/v1`              |
-| `content/labs/experiment.md` | `/blog/labs/experiment`           |
-| `content/authors/name.md`    | `/blog/authors/name`              |
+| Directory                  | Public URL with `/blog` base path |
+| -------------------------- | --------------------------------- |
+| `content/posts/my-post.md` | `/blog/my-post`                   |
+| `content/authors/name.md`  | `/blog/authors/name`              |
 
-Use lowercase kebab-case filenames. Slugs must be unique across all collections so related-post references remain unambiguous.
+Use lowercase kebab-case filenames. Slugs must be unique so related-post references remain unambiguous.
 
 ## Frontmatter
 
@@ -22,12 +20,10 @@ updated: "2026-09-09" # optional; must not precede date
 author: "MergeWatch Team" # must match an author profile
 category: "Engineering" # Company, Engineering, Product, or Research
 tags: [code-review, ai]
-featured: false
 draft: false
 canonical: "https://mergewatch.ai/blog/custom-path" # optional
 image: "/images/posts/example.png" # optional; must exist
 related: [another-slug] # optional
-version: "v0.6.0" # required for changelog entries
 ---
 ```
 

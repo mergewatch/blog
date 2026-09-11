@@ -35,7 +35,7 @@ export async function GET(
   { params }: { params: Promise<{ type: string; slug: string }> },
 ) {
   const { type, slug } = await params;
-  const item = ["posts", "changelog", "labs"].includes(type)
+  const item = (contentTypes as readonly string[]).includes(type)
     ? getContent(type as ContentType, slug)
     : undefined;
   if (!item) return new Response("Not found", { status: 404 });

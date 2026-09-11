@@ -4,7 +4,7 @@ import {
   dynamicParams,
   generateStaticParams,
 } from "@/app/og/[type]/[slug]/route";
-import { getAllContent } from "@/lib/content";
+import { contentTypes, getAllContent } from "@/lib/content";
 
 describe("OG images are prerendered", () => {
   it("is built at build time, not per request", () => {
@@ -15,15 +15,13 @@ describe("OG images are prerendered", () => {
     expect(dynamicParams).toBe(false);
   });
 
-  it("covers every published item, across all three content types", () => {
+  it("covers every published item, across every content type", () => {
     const params = generateStaticParams();
     const published = getAllContent();
     expect(params).toHaveLength(published.length);
-    // The route takes a `type`; a params list covering only posts would leave
-    // changelog and labs entries with a 404 image and no failing test.
-    expect(new Set(params.map((p) => p.type))).toEqual(
-      new Set(["posts", "changelog", "labs"]),
-    );
+    // The route takes a `type`; a params list missing a content type would
+    // leave its entries with a 404 image and no failing test.
+    expect(new Set(params.map((p) => p.type))).toEqual(new Set(contentTypes));
   });
 
   it("does not generate an image for drafts", () => {
