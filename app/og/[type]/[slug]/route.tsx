@@ -21,6 +21,12 @@ export const runtime = "nodejs";
  * removes the streaming path entirely rather than working around it, and every
  * other page on this site is already prerendered.
  */
+// Pinned, not inherited. The root layout sets revalidate=300 for documents
+// (#21); these images are content-addressed — their URL carries a hash that
+// changes when the content does — so they keep the immutable year. Without
+// this export they merely HAPPEN not to inherit, which is not the same as
+// being intended to.
+export const revalidate = false;
 export const dynamic = "force-static";
 export const dynamicParams = false;
 
@@ -35,7 +41,7 @@ export async function GET(
   { params }: { params: Promise<{ type: string; slug: string }> },
 ) {
   const { type, slug } = await params;
-  const item = ["posts", "changelog", "labs"].includes(type)
+  const item = (contentTypes as readonly string[]).includes(type)
     ? getContent(type as ContentType, slug)
     : undefined;
   if (!item) return new Response("Not found", { status: 404 });

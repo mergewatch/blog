@@ -29,5 +29,7 @@ export const site = {
   github: "https://github.com/mergewatch/mergewatch.ai",
   product: "https://mergewatch.ai/",
   pricing: "https://mergewatch.ai/pricing",
+  openSource: "https://mergewatch.ai/open-source",
+  signin: "https://mergewatch.ai/signin",
   docs: "https://docs.mergewatch.ai",
 } as const;

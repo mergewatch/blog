@@ -1,6 +1,6 @@
 # MergeWatch Blog
 
-The official publication site for MergeWatch engineering articles, product updates, release notes, and Labs research. It is a standalone Next.js 15 application, with Markdown in Git as its content system.
+The official publication site for MergeWatch engineering articles and product updates. It is a standalone Next.js 15 application, with Markdown in Git as its content system.
 
 > This repository owns official MergeWatch editorial content. Self-hosted MergeWatch installations do not host or duplicate this content.
 
@@ -31,7 +31,7 @@ pnpm build
 
 ## Write and publish
 
-Add Markdown to `content/posts`, `content/changelog`, or `content/labs`. The filename is the slug. Author profiles live in `content/authors`. See [the authoring guide](docs/content-authoring.md).
+Add Markdown to `content/posts`. The filename is the slug. Author profiles live in `content/authors`. See [the authoring guide](docs/content-authoring.md).
 
 Drafts use `draft: true`. They are excluded by default and can only be previewed outside production with `NEXT_PUBLIC_SHOW_DRAFTS=true`. The production environment ignores that switch.
 
@@ -43,8 +43,6 @@ The app defines its homepage at `/` and uses Next.js `basePath=/blog`, producing
 
 - `https://mergewatch.ai/blog`
 - `https://mergewatch.ai/blog/article-slug`
-- `https://mergewatch.ai/blog/changelog/release-slug`
-- `https://mergewatch.ai/blog/labs/research-slug`
 
 This avoids `/blog/blog/...`. Canonicals are always generated beneath `https://mergewatch.ai/blog`, even on staging or Amplify previews. Only `DEPLOYMENT_ENV=production` is indexable; every other value fails closed to `noindex, nofollow` at both page and robots.txt levels.
 

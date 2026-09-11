@@ -7,8 +7,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const content = getAllContent();
   const routes = [
     "",
-    "changelog",
-    "labs",
     ...new Set(
       content.map((item) => `category/${item.category.toLowerCase()}`),
     ),

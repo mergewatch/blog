@@ -7,6 +7,22 @@ import { PRODUCTION_ORIGIN, canonicalRoot, site } from "@/lib/site";
 import { robotsMetadata, serializeJsonLd } from "@/lib/metadata";
 import "./globals.css";
 
+// #21: Amplify serves prerendered page output with s-maxage=31536000 (a year),
+// and the /blog rewrite makes the DASHBOARD's CDN cache that response. Deploying
+// this app invalidates only this app's distribution, so published posts do not
+// appear and DELETED posts stay reachable — while every deploy reports success.
+//
+// Three levers were tried and measured: next.config headers() (discarded on
+// prerendered pages), amplify.yml customHeaders (no effect), and this one —
+// which was dismissed earlier on an invalid local test, because `next start`
+// never emits the s-maxage header at all, so nothing could have changed.
+//
+// revalidate is the adapter's documented ISR lever, so it is the one mechanism
+// aimed at the layer that actually sets the header. Verify on development by
+// measuring the response; if it does not move, revert rather than stack a
+// fourth config that reads correctly and does nothing.
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   metadataBase: new URL(PRODUCTION_ORIGIN),
   title: {
