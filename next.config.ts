@@ -11,6 +11,11 @@ const basePath = normalizeBasePath(
 
 const nextConfig: NextConfig = {
   basePath,
+  // Bake DEPLOYMENT_ENV into the build. Pages revalidate at runtime (#24), and
+  // Amplify's SSR runtime does not receive console environment variables, so a
+  // production page rebuilt after deploy read it as unset and turned noindex.
+  // An unset value at build time still fails closed to noindex.
+  env: { DEPLOYMENT_ENV: process.env.DEPLOYMENT_ENV ?? "" },
   poweredByHeader: false,
   images: { formats: ["image/avif", "image/webp"] },
   async headers() {

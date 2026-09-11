@@ -35,6 +35,20 @@ describe("environment SEO safety", () => {
     expect(robotsMetadata).toMatchObject({ index: true, follow: true });
   });
 
+  it("bakes DEPLOYMENT_ENV into the build so runtime page rebuilds keep it", async () => {
+    // Pages revalidate at runtime, and Amplify's SSR runtime has no console
+    // environment variables. Without this, production pages rebuilt after a
+    // deploy read DEPLOYMENT_ENV as unset and served noindex, nofollow.
+    process.env.DEPLOYMENT_ENV = "production";
+    const { default: production } = await import("@/next.config");
+    expect(production.env?.DEPLOYMENT_ENV).toBe("production");
+
+    vi.resetModules();
+    delete process.env.DEPLOYMENT_ENV;
+    const { default: unset } = await import("@/next.config");
+    expect(unset.env?.DEPLOYMENT_ENV).toBe("");
+  });
+
   it("blocks every crawler in non-production robots.txt", async () => {
     process.env.DEPLOYMENT_ENV = "preview";
     const { default: robots } = await import("@/app/robots");
