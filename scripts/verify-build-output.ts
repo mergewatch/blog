@@ -12,6 +12,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { getAllContent } from "../lib/content";
+import { canonicalRoot } from "../lib/site";
 
 const mode = process.argv[2];
 if (mode !== "production" && mode !== "staging") {
@@ -159,6 +160,61 @@ if (!html) {
     bad("staging canonical does not point at the production origin", sample!);
   else ok("staging canonical still points at production");
 }
+
+// ── every advertised social image must actually resolve ─────────────────────
+// #17: the file-convention image URL already carries basePath, and resolving it
+// against a metadataBase that ALSO ended in /blog produced /blog/blog/... — a
+// 404 on 17 pages including the homepage. layout.tsx set the correct URL by
+// hand and the file convention silently overrode it, so the bug was invisible
+// on a source read; only the emitted HTML showed it.
+//
+// So resolve what each page ADVERTISES to the artifact the build emitted, and
+// require that artifact to be a real PNG. Pattern-matching the URL would only
+// have caught the one doubling we already know about; this also catches a page
+// that advertises nothing, and an image route that emitted an empty body.
+const SOCIAL_IMAGE =
+  /<meta[^>]+(?:property|name)=["'](?:og:image|twitter:image)["'][^>]+content=["']([^"']+)["']/gi;
+const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+
+let resolved = 0;
+for (const page of pages) {
+  const body = readOrFail(page, "scanning rendered HTML for social images");
+  if (body === null) continue;
+  const label = path.relative(appDir, page);
+
+  const urls = new Set([...body.matchAll(SOCIAL_IMAGE)].map((m) => m[1]));
+  if (!urls.size) {
+    bad("page advertises no social image", label);
+    continue;
+  }
+
+  for (const url of urls) {
+    if (!url.startsWith(`${canonicalRoot}/`)) {
+      bad(
+        "social image is not an absolute URL under the canonical root",
+        `${label} -> ${url}`,
+      );
+      continue;
+    }
+    // Strip origin + basePath + cache-busting query to get the route path, then
+    // map it to the emitted artifact. A doubled basePath leaves a leading
+    // "/blog" here, which resolves to no route and fails below.
+    const route = url.slice(canonicalRoot.length).replace(/\?.*$/, "");
+    const artifact = path.join(appDir, `${route}.body`);
+    if (!fs.existsSync(artifact)) {
+      bad("advertised social image was never emitted", `${label} -> ${url}`);
+      continue;
+    }
+    const bytes = fs.readFileSync(artifact);
+    if (!bytes.subarray(0, 4).equals(PNG_MAGIC)) {
+      bad("emitted social image is not a PNG", `${label} -> ${url}`);
+      continue;
+    }
+    resolved++;
+  }
+}
+if (resolved)
+  ok(`${resolved} advertised social image(s) resolve to emitted PNGs`);
 
 for (const line of checks) console.log(`  ${line}`);
 if (failures.length) {
