@@ -3,12 +3,12 @@ import { Analytics } from "@/components/analytics";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { ThemeProvider } from "@/components/theme-provider";
-import { canonicalRoot, canonicalUrl, site } from "@/lib/site";
+import { PRODUCTION_ORIGIN, canonicalRoot, site } from "@/lib/site";
 import { robotsMetadata, serializeJsonLd } from "@/lib/metadata";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(canonicalRoot),
+  metadataBase: new URL(PRODUCTION_ORIGIN),
   title: {
     default: "MergeWatch Blog — Engineering, Product & Research",
     template: "%s — MergeWatch Blog",
@@ -23,14 +23,6 @@ export const metadata: Metadata = {
     siteName: site.name,
     title: "MergeWatch Blog",
     description: site.description,
-    images: [
-      {
-        url: canonicalUrl("opengraph-image"),
-        width: 1200,
-        height: 630,
-        alt: "MergeWatch Blog",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
