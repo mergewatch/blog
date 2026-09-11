@@ -212,6 +212,8 @@ const authorSchema = z.object({
   bio: z.string().min(20),
   github: z.string().url().optional(),
   image: z.string().startsWith("/").optional(),
+  // Drives the schema.org author type in article JSON-LD.
+  kind: z.enum(["person", "organization"]).default("person"),
 });
 export type Author = z.infer<typeof authorSchema> & { slug: string };
 
