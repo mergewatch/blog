@@ -200,8 +200,13 @@ for (const page of pages) {
     // map it to the emitted artifact. A doubled basePath leaves a leading
     // "/blog" here, which resolves to no route and fails below.
     const route = url.slice(canonicalRoot.length).replace(/\?.*$/, "");
-    const artifact = path.join(appDir, `${route}.body`);
-    if (!fs.existsSync(artifact)) {
+    // A frontmatter `image` is served straight from public/ rather than
+    // emitted by an image route, so accept either location.
+    const artifact = [
+      path.join(appDir, `${route}.body`),
+      path.join(process.cwd(), "public", route),
+    ].find((candidate) => fs.existsSync(candidate));
+    if (!artifact) {
       bad("advertised social image was never emitted", `${label} -> ${url}`);
       continue;
     }

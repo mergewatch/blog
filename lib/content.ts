@@ -4,7 +4,7 @@ import matter from "gray-matter";
 import readingTime from "reading-time";
 import { z } from "zod";
 
-export const contentTypes = ["posts", "changelog", "labs"] as const;
+export const contentTypes = ["posts"] as const;
 export type ContentType = (typeof contentTypes)[number];
 export const categories = [
   "Company",
@@ -21,12 +21,10 @@ const frontmatterSchema = z.object({
   author: z.string().min(1),
   category: z.enum(categories),
   tags: z.array(z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)).min(1),
-  featured: z.boolean().default(false),
   draft: z.boolean().default(false),
   canonical: z.string().url().optional(),
   image: z.string().startsWith("/").optional(),
   related: z.array(z.string()).optional(),
-  version: z.string().optional(),
 });
 
 export type Frontmatter = z.infer<typeof frontmatterSchema>;
@@ -95,9 +93,8 @@ export function getByType(type: ContentType) {
   return getAllContent().filter((item) => item.type === type);
 }
 
-export function contentHref(item: Pick<ContentItem, "type" | "slug">) {
-  if (item.type === "posts") return `/${item.slug}`;
-  return `/${item.type}/${item.slug}`;
+export function contentHref(item: Pick<ContentItem, "slug">) {
+  return `/${item.slug}`;
 }
 
 export function getRelated(item: ContentItem, limit = 3) {
@@ -151,10 +148,6 @@ export function validateAllContent() {
       errors.push(
         `${item.type}/${item.slug}: updated date precedes publication date`,
       );
-    if (item.type === "changelog" && !item.version)
-      errors.push(
-        `${item.type}/${item.slug}: changelog entries require version`,
-      );
     if (
       item.canonical &&
       !item.canonical.startsWith("https://mergewatch.ai/blog/")
@@ -179,13 +172,22 @@ export function validateAllContent() {
           `${item.type}/${item.slug}: related content '${slug}' does not exist`,
         );
     }
-    const internalLinks = [...item.body.matchAll(/\]\((\/[^)]+)\)/g)].map(
-      (match) => match[1].split("#")[0].replace(/\/$/, ""),
-    );
-    for (const link of internalLinks) {
+    for (const [, bang, target] of item.body.matchAll(
+      /(!?)\[[^\]]*\]\((\/[^)\s]+)\)/g,
+    )) {
+      // Image embeds point at files in public/, not at content pages.
+      if (bang) {
+        const file = path.join(process.cwd(), "public", target.slice(1));
+        if (!fs.existsSync(file))
+          errors.push(
+            `${item.type}/${item.slug}: image not found at public${target}`,
+          );
+        continue;
+      }
+      const link = target.split("#")[0].replace(/\/$/, "");
       if (
         !link ||
-        ["/", "/changelog", "/labs"].includes(link) ||
+        link === "/" ||
         link.startsWith("/category/") ||
         link.startsWith("/tag/") ||
         link.startsWith("/authors/")

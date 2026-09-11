@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, CalendarDays, Clock3 } from "lucide-react";
+import { ContentList } from "@/components/content-list";
 import { Markdown } from "@/components/markdown";
-import { PostCard } from "@/components/post-card";
 import {
   authorSlug,
   contentHref,
@@ -23,17 +23,14 @@ export function ArticlePage({ item }: { item: ContentItem }) {
   const related = getRelated(item);
   const adjacent = getAdjacentPost(item);
   const url = item.canonical ?? canonicalUrl(contentHref(item));
-  const crumbs = [{ name: "Blog", url: canonicalUrl() }];
-  if (item.type !== "posts")
-    crumbs.push({
-      name: item.type === "labs" ? "Labs" : "Changelog",
-      url: canonicalUrl(`/${item.type}`),
-    });
-  crumbs.push({ name: item.title, url });
+  const crumbs = [
+    { name: "Blog", url: canonicalUrl() },
+    { name: item.title, url },
+  ];
   const jsonLd = [
     {
       "@context": "https://schema.org",
-      "@type": item.type === "labs" ? "ScholarlyArticle" : "BlogPosting",
+      "@type": "BlogPosting",
       headline: item.title,
       description: item.description,
       datePublished: item.date,
@@ -65,20 +62,13 @@ export function ArticlePage({ item }: { item: ContentItem }) {
         <header className="border-b border-border-subtle">
           <div className="mx-auto max-w-4xl px-5 py-16 md:py-24">
             <Link
-              href={item.type === "posts" ? "/" : `/${item.type}`}
+              href="/"
               className="inline-flex items-center gap-2 text-sm text-fg-secondary hover:text-fg-primary"
             >
-              <ArrowLeft size={15} />{" "}
-              {item.type === "posts" ? "All articles" : item.type}
+              <ArrowLeft size={15} /> All articles
             </Link>
             <div className="mt-10 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-accent-green">
               <span>{item.category}</span>
-              {item.version && (
-                <>
-                  <span className="text-fg-tertiary">·</span>
-                  <span>{item.version}</span>
-                </>
-              )}
             </div>
             <h1 className="mt-4 text-4xl font-extrabold leading-[1.08] tracking-[-0.035em] md:text-6xl">
               {item.title}
@@ -168,18 +158,11 @@ export function ArticlePage({ item }: { item: ContentItem }) {
         </nav>
       )}
       {related.length > 0 && (
-        <section className="mx-auto max-w-6xl px-5 py-12">
-          <h2 className="mb-6 text-2xl font-bold tracking-tight">
+        <section className="mx-auto max-w-4xl px-5 py-12">
+          <h2 className="mb-2 text-2xl font-bold tracking-tight">
             Keep reading
           </h2>
-          <div className="grid gap-5 md:grid-cols-3">
-            {related.map((relatedItem) => (
-              <PostCard
-                key={`${relatedItem.type}/${relatedItem.slug}`}
-                item={relatedItem}
-              />
-            ))}
-          </div>
+          <ContentList items={related} />
         </section>
       )}
       <script

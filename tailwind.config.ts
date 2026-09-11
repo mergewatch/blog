@@ -7,6 +7,11 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Mirrors the mergewatch.ai dashboard's Primer accents used in its nav.
+        primer: {
+          green: "#3fb950",
+          muted: "#8b949e",
+        },
         surface: {
           page: "var(--bg-page)",
           card: "var(--bg-card)",
