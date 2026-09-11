@@ -1,4 +1,25 @@
 version: 1
+# #21: Amplify serves prerendered HTML with s-maxage=31536000 (one year). The
+# /blog rewrite makes the DASHBOARD's CDN cache that response, and deploying
+# this app invalidates only this app's distribution — so a published post can
+# sit behind a stale copy at mergewatch.ai/blog while every deploy goes green.
+#
+# This header is set here rather than in next.config headers(), because Next
+# overwrites Cache-Control on prerendered pages: the config reads correctly and
+# changes nothing. Verified locally — the rule applied to the OG image route and
+# was discarded on every HTML page.
+#
+# The static rule is second on purpose: for overlapping patterns the later match
+# wins, so fingerprinted assets keep their immutable year.
+customHeaders:
+  - pattern: "/**"
+    headers:
+      - key: Cache-Control
+        value: "public, max-age=0, s-maxage=300, stale-while-revalidate=86400"
+  - pattern: "/_next/static/**"
+    headers:
+      - key: Cache-Control
+        value: "public, max-age=31536000, immutable"
 frontend:
   phases:
     preBuild:
