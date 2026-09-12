@@ -12,8 +12,9 @@ export const isProduction = process.env.DEPLOYMENT_ENV === "production";
 export const canonicalRoot = `${PRODUCTION_ORIGIN}${basePath}`;
 
 export function canonicalUrl(path = "") {
-  const clean = path === "/" ? "" : `/${path.replace(/^\/+|\/+$/g, "")}`;
-  return `${canonicalRoot}${clean}`;
+  // The blog root has no trailing slash: /blog/ 308-redirects to /blog.
+  const clean = path.replace(/^\/+|\/+$/g, "");
+  return clean ? `${canonicalRoot}/${clean}` : canonicalRoot;
 }
 
 export function appPath(path = "") {
