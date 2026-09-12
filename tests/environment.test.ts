@@ -23,6 +23,24 @@ describe("environment SEO safety", () => {
     }
   });
 
+  it("gives the blog root a canonical URL without a trailing slash", async () => {
+    // /blog/ 308-redirects to /blog, so a trailing slash would put a redirect
+    // into the sitemap and the breadcrumb JSON-LD.
+    const { canonicalRoot, canonicalUrl } = await import("@/lib/site");
+    expect(canonicalRoot).toBe("https://mergewatch.ai/blog");
+    for (const path of [undefined, "", "/"])
+      expect(canonicalUrl(path), String(path)).toBe(canonicalRoot);
+    expect(canonicalUrl("/tag/ai/")).toBe("https://mergewatch.ai/blog/tag/ai");
+  });
+
+  it("lists no redirecting URLs in the production sitemap", async () => {
+    process.env.DEPLOYMENT_ENV = "production";
+    const { default: sitemap } = await import("@/app/sitemap");
+    const urls = sitemap().map((entry) => entry.url);
+    expect(urls).toContain("https://mergewatch.ai/blog");
+    for (const url of urls) expect(url.endsWith("/"), url).toBe(false);
+  });
+
   it("marks all non-production pages noindex and nofollow", async () => {
     process.env.DEPLOYMENT_ENV = "development";
     const { robotsMetadata } = await import("@/lib/metadata");
