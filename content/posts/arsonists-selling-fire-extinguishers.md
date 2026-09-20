@@ -5,7 +5,7 @@ date: "2026-09-19"
 author: "Yasha Spong"
 category: "Company"
 tags: [ai, security, open-source, supply-chain, code-review]
-image: "/images/posts/arsonists-selling-fire-extinguishers.jpg"
+image: "/images/posts/arsonists-selling-fire-extinguishers-og.png"
 draft: false
 related: [why-we-are-building-mergewatch]
 ---
