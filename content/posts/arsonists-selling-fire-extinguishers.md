@@ -5,14 +5,14 @@ date: "2026-09-19"
 author: "Yasha Spong"
 category: "Company"
 tags: [ai, security, open-source, supply-chain, code-review]
-image: "/images/posts/arsonists-selling-fire-extinguishers-og.png"
+image: "/images/posts/robots-on-fire.png"
 draft: false
 related: [why-we-are-building-mergewatch]
 ---
 
 _AI companies should help defend the world against the risks they create. That is a responsibility — not a market opportunity._
 
-![A figure in a hoodie labelled 'bigger AI capabilities' sets fire to a skyline of buildings marked hospitals, businesses, governments, software systems and open source projects, while a suited salesman in the foreground holds out a fire extinguisher labelled 'AI-powered cybersecurity: find, validate, patch, protect' beside a placard reading 'arsonists selling fire extinguishers?'](/images/posts/arsonists-selling-fire-extinguishers.jpg)
+![A robot kneels engulfed in flames with its hands raised while a second robot sprays it with a fire extinguisher, on a wet rooftop above a city skyline at sunset](/images/posts/robots-on-fire.png)
 
 OpenAI is building increasingly powerful cybersecurity capabilities. Its Daybreak initiative uses frontier models to find vulnerabilities, validate them, and help generate patches. OpenAI describes a future in which AI agents continuously examine software and infrastructure for weaknesses, potentially operating at a speed and scale human security teams cannot match.
 
